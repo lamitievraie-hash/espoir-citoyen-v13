@@ -4,14 +4,9 @@ const db = new sqlite3.Database('./ong.db');
 
 db.serialize(() => {
   // Table Membres
-  db.run(`CREATE TABLE IF NOT EXISTS Membres (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nom TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    role TEXT DEFAULT 'membre',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`);
+  db.run(`INSERT OR IGNORE INTO Membres (nom, email, password, role) VALUES (?, ?, ?, ?)`, 
+  ['Président', 'president@espoircitoyen.org', bcrypt.hashSync('admin123', 10), 'admin']
+);
   
   // Table Projets
   db.run(`CREATE TABLE IF NOT EXISTS Projets (
