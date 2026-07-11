@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESPOIR CITOYEN V13</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen active">
+      <div class="login-container">
+        <div class="login-header">
+          <h1>ESPOIR CITOYEN</h1>
+          <p>Gestion Association V13</p>
+          <span class="server-badge">Mode Serveur</span>
+        </div>
+        <form id="loginForm">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="email" required placeholder="president@espoircitoyen.org">
+          </div>
+          <div class="form-group">
+            <label>Mot de passe</label>
+            <input type="password" id="password" required placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn btn-primary">Se connecter</button>
+          <div id="loginError" class="error-message"></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="screen">
+      <header class="app-header">
+        <div class="header-left">
+          <h1>ESPOIR CITOYEN</h1>
+          <span class="server-badge">Mode Serveur</span>
+        </div>
+        <div class="header-right">
+          <span id="userInfo"></span>
+          <button onclick="logout()" class="btn btn-danger">Déconnexion</button>
+        </div>
+      </header>
+      
+      <nav class="sidebar">
+        <div id="moduleNav"></div>
+      </nav>
+      
+      <main class="content">
+        <div id="moduleContent"></div>
+      </main>
+    </div>
+  </div>
+  
+  <script src="app.js"></script>
+</body>
+</html>
