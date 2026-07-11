@@ -86,14 +86,14 @@ db.serialize(() => {
   
   // Insérer utilisateurs par défaut
   const users = [
-    ['president@espoircitoyen.org', 'President2024!', 'Président ONG', 'Président'],
+    ['president@espoircitoyen.org', 'admin123', 'Président ONG', 'Président'],
     ['tresorier@espoircitoyen.org', 'Tresorier2024!', 'Trésorier ONG', 'Trésorier'],
     ['secretaire@espoircitoyen.org', 'Secretaire2024!', 'Secrétaire ONG', 'Secrétaire']
   ];
   
   users.forEach(([email, pass, nom, role]) => {
     bcrypt.hash(pass, 10, (err, hash) => {
-      db.run('INSERT OR IGNORE INTO users (email, password, nom, role) VALUES (?, ?, ?, ?)', 
+      db.run('INSERT OR IGNORE INTO Membres (email, password, nom, role) VALUES (?, ?, ?, ?)', 
         [email, hash, nom, role]);
     });
   });
@@ -231,7 +231,15 @@ app.get('/api/stats', authMiddleware, (req, res) => {
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
+app.get('/debug-users', (req, res) => {
+  const sqlite3 = require('sqlite3').verbose();
+  const db = new sqlite3.Database('./ong.db');
+  db.all("SELECT id, nom, email, role FROM Membres", [], (err, rows) => {
+    db.close();
+    if (err) return res.json({ error: err.message });
+    res.json({ total: rows.length, users: rows });
+  });
+});
 app.listen(PORT, () => {
   console.log(`🚀 Serveur ESPOIR CITOYEN V13 démarré sur port ${PORT}`);
   console.log(`📊 Base de données: ong.db`);
