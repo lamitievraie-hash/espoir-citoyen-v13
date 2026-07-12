@@ -52,8 +52,8 @@ app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
 
   db.get(`SELECT * FROM Membres WHERE email =?`, [email], (err, user) => {
-    if (err) return res.status(500).json({ success: false, error: 'Erreur serveur' });
-    if (!user) return res.status(401).json({ success: false, error: 'Email ou mot de passe incorrect' });
+    if (err) return res.status(500).json({ error: 'Erreur serveur' });
+    if (!user) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
 
     bcrypt.compare(password, user.mot_de_passe, (err, result) => {
       if (result) {
@@ -63,88 +63,78 @@ app.post('/api/login', (req, res) => {
           { expiresIn: '24h' }
         );
         res.json({
-          success: true,
           token,
           user: { id: user.id, nom: user.nom, email: user.email, role: user.role }
         });
       } else {
-        res.status(401).json({ success: false, error: 'Email ou mot de passe incorrect' });
+        res.status(401).json({ error: 'Email ou mot de passe incorrect' });
       }
     });
   });
 });
 
-// === ROUTES API - TOUTES AVANT app.get('*') ===
-
+// === ROUTES QUI RENVOIENT DES OBJETS ===
 app.get('/user', (req, res) => {
   res.json({
-    success: true,
-    data: {
-      id: 1,
-      nom: "Président ESPOIR CITOYEN",
-      email: "president@espoircitoyen.org",
-      role: "admin"
-    }
+    id: 1,
+    nom: "Président ESPOIR CITOYEN",
+    email: "president@espoircitoyen.org",
+    role: "admin"
   });
 });
 
 app.get('/stats', (req, res) => {
   db.get("SELECT COUNT(*) as total FROM Membres", [], (err, row) => {
     res.json({
-      success: true,
-      data: {
-        membres: row?.total || 0,
-        projets: 0,
-        cotisations: 0,
-        solde: 0
-      }
+      membres: row?.total || 0,
+      projets: 0,
+      cotisations: 0,
+      solde: 0
     });
-  });
-});
-
-app.get('/debug-users', (req, res) => {
-  db.all("SELECT id, email, nom, role FROM Membres", [], (err, rows) => {
-    if (err) return res.json({ success: false, error: err.message });
-    res.json({ success: true, total: rows.length, data: rows });
   });
 });
 
 app.get('/api/dashboard', (req, res) => {
   db.get("SELECT COUNT(*) as total FROM Membres", [], (err, row) => {
     res.json({
-      success: true,
-      data: {
-        message: 'Bienvenue sur le dashboard ESPOIR CITOYEN',
-        membres: row?.total || 0,
-        projets: 0,
-        cotisations: 0,
-        solde: 0
-      }
+      message: 'Bienvenue sur le dashboard ESPOIR CITOYEN',
+      membres: row?.total || 0,
+      projets: 0,
+      cotisations: 0,
+      solde: 0
     });
   });
 });
 
+app.get('/api/comptabilite', (req, res) => {
+  res.json({ recettes: 0, depenses: 0, solde: 0 });
+});
+
+// === ROUTES QUI RENVOIENT DES TABLEAUX POUR.map() ===
 app.get('/api/membres', (req, res) => {
   db.all("SELECT id, nom, email, role, date_inscription FROM Membres", [], (err, rows) => {
-    if (err) return res.status(500).json({ success: false, error: err.message });
-    res.json({ success: true, data: rows });
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
   });
 });
 
-app.get('/api/cotisations', (req, res) => res.json({ success: true, data: [] }));
-app.get('/api/projets', (req, res) => res.json({ success: true, data: [] }));
-app.get('/api/depenses', (req, res) => res.json({ success: true, data: [] }));
-app.get('/api/recettes', (req, res) => res.json({ success: true, data: [] }));
-app.get('/api/evenements', (req, res) => res.json({ success: true, data: [] }));
-app.get('/api/reunions', (req, res) => res.json({ success: true, data: [] }));
-app.get('/api/presences', (req, res) => res.json({ success: true, data: [] }));
-app.get('/api/documents', (req, res) => res.json({ success: true, data: [] }));
-app.get('/api/archives', (req, res) => res.json({ success: true, data: [] }));
-app.get('/api/rapports', (req, res) => res.json({ success: true, data: [] }));
-app.get('/api/comptabilite', (req, res) => res.json({
-  success: true,
-  data: { recettes: 0, depenses: 0, solde: 0 }
-}));
+app.get('/api/cotisations', (req, res) => res.json([]));
+app.get('/api/projets', (req, res) => res.json([]));
+app.get('/api/depenses', (req, res) => res.json([]));
+app.get('/api/recettes', (req, res) => res.json([]));
+app.get('/api/evenements', (req, res) => res.json([]));
+app.get('/api/reunions', (req, res) => res.json([]));
+app.get('/api/presences', (req, res) => res.json([]));
+app.get('/api/documents', (req, res) => res.json([]));
+app.get('/api/archives', (req, res) => res.json([]));
+app.get('/api/rapports', (req, res) => res.json([]));
+
+app.get('/debug-users', (req, res) => {
+  db.all("SELECT id, email, nom, role FROM Membres", [], (err, rows) => {
+    if (err) return res.json({ error: err.message });
+    res.json({ total: rows.length, users: rows });
+  });
+});
 
 // === FRONTEND - TOUJOURS EN DERNIER ===
 app.get('*', (req, res) => {
