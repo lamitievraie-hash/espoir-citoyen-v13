@@ -91,6 +91,27 @@ app.get('/debug-users', (req, res) => {
 });
 
 // SERVE FRONTEND - TOUJOURS EN DERNIER
+// API Routes - À mettre AVANT app.get('*')
+app.get('/api/dashboard', (req, res) => {
+  res.json({ 
+    message: 'Bienvenue sur le dashboard ESPOIR CITOYEN',
+    membres: 3,
+    projets: 0,
+    cotisations: 0
+  });
+});
+
+app.get('/api/membres', (req, res) => {
+  db.all("SELECT id, nom, email, role, date_inscription FROM Membres", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+// SERVE FRONTEND - DOIT ÊTRE LA DERNIÈRE ROUTE
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
