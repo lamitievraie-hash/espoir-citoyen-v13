@@ -92,6 +92,37 @@ app.get('/debug-users', (req, res) => {
 
 // SERVE FRONTEND - TOUJOURS EN DERNIER
 // API Routes - À mettre AVANT app.get('*')
+// API Routes complètes - À mettre AVANT app.get('*')
+app.get('/api/dashboard', (req, res) => {
+  db.get("SELECT COUNT(*) as total FROM Membres", [], (err, row) => {
+    res.json({ 
+      message: 'Bienvenue sur le dashboard ESPOIR CITOYEN',
+      membres: row?.total || 0,
+      projets: 0,
+      cotisations: 0,
+      solde: 0
+    });
+  });
+});
+
+app.get('/api/membres', (req, res) => {
+  db.all("SELECT id, nom, email, role, date_inscription FROM Membres", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.get('/api/cotisations', (req, res) => res.json([]));
+app.get('/api/projets', (req, res) => res.json([]));
+app.get('/api/depenses', (req, res) => res.json([]));
+app.get('/api/recettes', (req, res) => res.json([]));
+app.get('/api/evenements', (req, res) => res.json([]));
+app.get('/api/reunions', (req, res) => res.json([]));
+app.get('/api/presences', (req, res) => res.json([]));
+app.get('/api/documents', (req, res) => res.json([]));
+app.get('/api/archives', (req, res) => res.json([]));
+app.get('/api/rapports', (req, res) => res.json([]));
+app.get('/api/comptabilite', (req, res) => res.json({ recettes: 0, depenses: 0, solde: 0 }));
 app.get('/api/dashboard', (req, res) => {
   res.json({ 
     message: 'Bienvenue sur le dashboard ESPOIR CITOYEN',
