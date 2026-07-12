@@ -17,21 +17,9 @@ const db = new sqlite3.Database('./ong.db', (err) => {
     console.error('Erreur connexion DB:', err.message);
   } else {
     console.log('✅ Connecté à la base SQLite.');
-    db.run(`CREATE TABLE IF NOT EXISTS Membres (
-    // Après db.run(`CREATE TABLE IF NOT EXISTS Membres...`)
 
-    db.run(`CREATE TABLE IF NOT EXISTS Cotisations (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      membre_id INTEGER NOT NULL,
-      montant REAL NOT NULL,
-      date_cotisation DATE DEFAULT (date('now')),
-      mois TEXT NOT NULL,
-      annee INTEGER NOT NULL,
-      methode TEXT DEFAULT 'Espèces',
-      note TEXT,
-      date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY(membre_id) REFERENCES Membres(id)
-    )`);
+    // Table Membres
+    db.run(`CREATE TABLE IF NOT EXISTS Membres (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nom TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
@@ -40,6 +28,21 @@ const db = new sqlite3.Database('./ong.db', (err) => {
       date_inscription DATETIME DEFAULT CURRENT_TIMESTAMP
     )`, (err) => {
       if (!err) {
+        // Table Cotisations - APRÈS Membres
+        db.run(`CREATE TABLE IF NOT EXISTS Cotisations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          membre_id INTEGER NOT NULL,
+          montant REAL NOT NULL,
+          date_cotisation DATE DEFAULT (date('now')),
+          mois TEXT NOT NULL,
+          annee INTEGER NOT NULL,
+          methode TEXT DEFAULT 'Espèces',
+          note TEXT,
+          date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(membre_id) REFERENCES Membres(id)
+        )`);
+
+        // Insertion des users par défaut
         const users = [
           ['Président ESPOIR CITOYEN', 'president@espoircitoyen.org', 'admin123', 'admin'],
           ['Trésorier ESPOIR CITOYEN', 'tresorier@espoircitoyen.org', 'admin123', 'admin'],
@@ -87,56 +90,17 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-// === ROUTES QUI RENVOIENT DES OBJETS ===
-// REMPLACE l'ancienne route vide par celle-ci
-app.get('/api/cotisations', (req, res) => {
-  db.all(`
-    SELECT c.*, m.nom as membre_nom, m.email as membre_email 
-    FROM Cotisations c 
-    JOIN Membres m ON c.membre_id = m.id 
-    ORDER BY c.date_cotisation DESC
-  `, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
+// === ROUTES UNIQUES - PAS DE DOUBLONS ===
+
+app.get('/user', (req, res) => {
+  res.json({
+    id: 1,
+    nom: "Président ESPOIR CITOYEN",
+    email: "president@espoircitoyen.org",
+    role: "admin"
   });
 });
 
-// NOUVELLE ROUTE POUR AJOUTER UNE COTISATION
-app.post('/api/cotisations', (req, res) => {
-  const { membre_id, montant, mois, annee, methode, note } = req.body;
-  
-  if (!membre_id || !montant || !mois || !annee) {
-    return res.status(400).json({ error: 'Champs obligatoires manquants' });
-  }
-
-  db.run(
-    `INSERT INTO Cotisations (membre_id, montant, mois, annee, methode, note) 
-     VALUES (?,?,?,?,?,?)`,
-    [membre_id, montant, mois, annee, methode || 'Espèces', note || ''],
-    function(err) {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ 
-        success: true, 
-        id: this.lastID,
-        message: 'Cotisation enregistrée'
-      });
-    }
-  );
-});
-
-// Route pour le total des cotisations → met à jour /stats et /api/dashboard
-app.get('/api/comptabilite', (req, res) => {
-  db.get("SELECT SUM(montant) as total FROM Cotisations", [], (err, row) => {
-    const totalCotisations = row?.total || 0;
-    res.json({ 
-      recettes: totalCotisations, 
-      depenses: 0, 
-      solde: totalCotisations 
-    });
-  });
-});
-
-// Mets à jour /stats et /api/dashboard pour inclure les vraies cotisations
 app.get('/stats', (req, res) => {
   db.get("SELECT COUNT(*) as total FROM Membres", [], (err, rowMembres) => {
     db.get("SELECT SUM(montant) as total FROM Cotisations", [], (err, rowCotis) => {
@@ -163,43 +127,18 @@ app.get('/api/dashboard', (req, res) => {
     });
   });
 });
-app.get('/user', (req, res) => {
-  res.json({
-    id: 1,
-    nom: "Président ESPOIR CITOYEN",
-    email: "president@espoircitoyen.org",
-    role: "admin"
-  });
-});
-
-app.get('/stats', (req, res) => {
-  db.get("SELECT COUNT(*) as total FROM Membres", [], (err, row) => {
-    res.json({
-      membres: row?.total || 0,
-      projets: 0,
-      cotisations: 0,
-      solde: 0
-    });
-  });
-});
-
-app.get('/api/dashboard', (req, res) => {
-  db.get("SELECT COUNT(*) as total FROM Membres", [], (err, row) => {
-    res.json({
-      message: 'Bienvenue sur le dashboard ESPOIR CITOYEN',
-      membres: row?.total || 0,
-      projets: 0,
-      cotisations: 0,
-      solde: 0
-    });
-  });
-});
 
 app.get('/api/comptabilite', (req, res) => {
-  res.json({ recettes: 0, depenses: 0, solde: 0 });
+  db.get("SELECT SUM(montant) as total FROM Cotisations", [], (err, row) => {
+    const totalCotisations = row?.total || 0;
+    res.json({
+      recettes: totalCotisations,
+      depenses: 0,
+      solde: totalCotisations
+    });
+  });
 });
 
-// === ROUTES QUI RENVOIENT DES TABLEAUX POUR.map() ===
 app.get('/api/membres', (req, res) => {
   db.all("SELECT id, nom, email, role, date_inscription FROM Membres", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -207,7 +146,40 @@ app.get('/api/membres', (req, res) => {
   });
 });
 
-app.get('/api/cotisations', (req, res) => res.json([]));
+app.get('/api/cotisations', (req, res) => {
+  db.all(`
+    SELECT c.*, m.nom as membre_nom, m.email as membre_email
+    FROM Cotisations c
+    JOIN Membres m ON c.membre_id = m.id
+    ORDER BY c.date_cotisation DESC
+  `, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/cotisations', (req, res) => {
+  const { membre_id, montant, mois, annee, methode, note } = req.body;
+
+  if (!membre_id ||!montant ||!mois ||!annee) {
+    return res.status(400).json({ error: 'Champs obligatoires manquants' });
+  }
+
+  db.run(
+    `INSERT INTO Cotisations (membre_id, montant, mois, annee, methode, note)
+     VALUES (?,?,?,?,?,?)`,
+    [membre_id, montant, mois, annee, methode || 'Espèces', note || ''],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({
+        success: true,
+        id: this.lastID,
+        message: 'Cotisation enregistrée'
+      });
+    }
+  );
+});
+
 app.get('/api/projets', (req, res) => res.json([]));
 app.get('/api/depenses', (req, res) => res.json([]));
 app.get('/api/recettes', (req, res) => res.json([]));
