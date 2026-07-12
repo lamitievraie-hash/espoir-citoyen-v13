@@ -83,13 +83,44 @@ app.post('/api/login', (req, res) => {
 });
 
 // Route de debug pour voir les users - DOIT ÊTRE AVANT app.get('*')
+// Route appelée par ton dashboard
+app.get('/stats', (req, res) => {
+  db.get("SELECT COUNT(*) as total FROM Membres", [], (err, row) => {
+    res.json({ 
+      membres: row?.total || 0,
+      projets: 0,
+      cotisations: 0,
+      solde: 0
+    });
+  });
+});
+
+// Route pour récupérer l'user connecté
+app.get('/user', (req, res) => {
+  res.json({ 
+    id: 1, 
+    nom: "Président", 
+    email: "president@espoircitoyen.org", 
+    role: "admin" 
+  });
+});
 app.get('/debug-users', (req, res) => {
   db.all("SELECT id, email, nom, role FROM Membres", [], (err, rows) => {
     if (err) return res.json({ error: err.message });
     res.json({ total: rows.length, users: rows });
   });
 });
-
+// Route appelée par le dashboard pour les stats
+app.get('/stats', (req, res) => {
+  db.get("SELECT COUNT(*) as total FROM Membres", [], (err, row) => {
+    res.json({ 
+      membres: row?.total || 0,
+      projets: 0,
+      cotisations: 0,
+      solde: 0
+    });
+  });
+});
 // SERVE FRONTEND - TOUJOURS EN DERNIER
 // API Routes - À mettre AVANT app.get('*')
 // API Routes complètes - À mettre AVANT app.get('*')
