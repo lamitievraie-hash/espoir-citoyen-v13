@@ -27,7 +27,6 @@ const db = new sqlite3.Database('./ong.db', (err) => {
       if (err) {
         console.error('Erreur création table Membres:', err.message);
       } else {
-        // Création des users par défaut
         const users = [
           ['Président ESPOIR CITOYEN', 'president@espoircitoyen.org', 'admin123', 'admin'],
           ['Trésorier ESPOIR CITOYEN', 'tresorier@espoircitoyen.org', 'admin123', 'admin'],
@@ -57,12 +56,8 @@ app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
   
   db.get(`SELECT * FROM Membres WHERE email = ?`, [email], (err, user) => {
-    if (err) {
-      return res.status(500).json({ error: 'Erreur serveur' });
-    }
-    if (!user) {
-      return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
-    }
+    if (err) return res.status(500).json({ error: 'Erreur serveur' });
+    if (!user) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     
     bcrypt.compare(password, user.mot_de_passe, (err, result) => {
       if (result) {
@@ -82,20 +77,22 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-// Route de debug pour voir les users - DOIT ÊTRE AVANT app.get('*')
-// Route appelée par ton dashboard
+// === ROUTES API - AVANT app.get('*') ===
+
 app.get('/stats', (req, res) => {
   db.get("SELECT COUNT(*) as total FROM Membres", [], (err, row) => {
     res.json({ 
-      membres: row?.total || 0,
-      projets: 0,
-      cotisations: 0,
-      solde: 0
+      success: true,
+      data: {
+        membres: row?.total || 0,
+        projets: 0,
+        cotisations: 0,
+        solde: 0
+      }
     });
   });
 });
 
-// Route pour récupérer l'user connecté
 app.get('/user', (req, res) => {
   res.json({ 
     id: 1, 
@@ -104,26 +101,14 @@ app.get('/user', (req, res) => {
     role: "admin" 
   });
 });
+
 app.get('/debug-users', (req, res) => {
   db.all("SELECT id, email, nom, role FROM Membres", [], (err, rows) => {
     if (err) return res.json({ error: err.message });
     res.json({ total: rows.length, users: rows });
   });
 });
-// Route appelée par le dashboard pour les stats
-app.get('/stats', (req, res) => {
-  db.get("SELECT COUNT(*) as total FROM Membres", [], (err, row) => {
-    res.json({ 
-      membres: row?.total || 0,
-      projets: 0,
-      cotisations: 0,
-      solde: 0
-    });
-  });
-});
-// SERVE FRONTEND - TOUJOURS EN DERNIER
-// API Routes - À mettre AVANT app.get('*')
-// API Routes complètes - À mettre AVANT app.get('*')
+
 app.get('/api/dashboard', (req, res) => {
   db.get("SELECT COUNT(*) as total FROM Membres", [], (err, row) => {
     res.json({ 
@@ -154,26 +139,8 @@ app.get('/api/documents', (req, res) => res.json([]));
 app.get('/api/archives', (req, res) => res.json([]));
 app.get('/api/rapports', (req, res) => res.json([]));
 app.get('/api/comptabilite', (req, res) => res.json({ recettes: 0, depenses: 0, solde: 0 }));
-app.get('/api/dashboard', (req, res) => {
-  res.json({ 
-    message: 'Bienvenue sur le dashboard ESPOIR CITOYEN',
-    membres: 3,
-    projets: 0,
-    cotisations: 0
-  });
-});
 
-app.get('/api/membres', (req, res) => {
-  db.all("SELECT id, nom, email, role, date_inscription FROM Membres", [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
-});
-
-// SERVE FRONTEND - DOIT ÊTRE LA DERNIÈRE ROUTE
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// === SERVE FRONTEND - TOUJOURS EN DERNIER ===
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
