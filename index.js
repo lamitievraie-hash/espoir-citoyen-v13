@@ -92,7 +92,19 @@ app.get('/stats', (req, res) => {
     });
   });
 });
-
+app.get('/api/dashboard', (req, res) => {
+  db.get("SELECT COUNT(*) as total FROM Membres", [], (err, row) => {
+    res.json({ 
+      success: true,
+      data: {
+        membres: row?.total || 0,
+        projets: 0,
+        cotisations: 0,
+        solde: 0
+      }
+    });
+  });
+});
 app.get('/user', (req, res) => {
   res.json({ 
     id: 1, 
